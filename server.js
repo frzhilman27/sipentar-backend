@@ -1,14 +1,26 @@
 const express = require("express");
 const cors = require("cors");
-const laporanRoutes = require("./routes/laporanRoutes");
-const PORT = process.env.PORT || 5000;
+const dotenv = require("dotenv");
+const bcrypt = require("bcryptjs");
 
-require("dotenv").config();
+dotenv.config();
 
+const connectDB = require("./config/db");
+const User = require("./models/User");
 const authRoutes = require("./routes/authRoutes");
+const laporanRoutes = require("./routes/laporanRoutes");
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
+/* ===============================
+   CONNECT DATABASE
+================================= */
+connectDB();
+
+/* ===============================
+   MIDDLEWARE
+================================= */
 app.use(cors({
   origin: [
     "http://localhost:3000",
@@ -16,32 +28,50 @@ app.use(cors({
   ],
   credentials: true
 }));
+
 app.use(express.json());
 
-app.use("/api/auth", authRoutes);
-
+/* ===============================
+   ROUTES
+================================= */
 app.get("/", (req, res) => {
   res.send("Sipentar Backend Running 🚀");
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server berjalan di port ${PORT}`);
+app.use("/api/auth", authRoutes);
+app.use("/api/laporan", laporanRoutes);
 
+/* ===============================
+   CREATE ADMIN (TEMPORARY)
+================================= */
 app.post("/create-admin", async (req, res) => {
-  const bcrypt = require("bcryptjs");
-  const User = require("./models/User");
+  try {
+    const existing = await User.findOne({ email: "admin@gmail.com" });
 
-  const hashed = await bcrypt.hash("123456", 10);
+    if (existing) {
+      return res.send("Admin already exists");
+    }
 
-  const admin = new User({
-    email: "admin@gmail.com",
-    password: hashed,
-    role: "admin"
-  });
+    const hashed = await bcrypt.hash("123456", 10);
 
-  await admin.save();
+    const admin = new User({
+      email: "admin@gmail.com",
+      password: hashed,
+      role: "admin"
+    });
 
-  res.send("Admin created");
+    await admin.save();
+
+    res.send("Admin created successfully");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error creating admin");
+  }
 });
 
+/* ===============================
+   START SERVER
+================================= */
+app.listen(PORT, () => {
+  console.log(`🚀 Server berjalan di port ${PORT}`);
 });
