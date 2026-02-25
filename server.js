@@ -14,6 +14,10 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 
+app.get("/", (req, res) => {
+  res.send("Sipentar Backend Running 🚀");
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Server berjalan di port ${PORT}`);
 });
