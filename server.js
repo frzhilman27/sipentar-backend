@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const laporanRoutes = require("./routes/laporanRoutes");
+const PORT = process.env.PORT || 5000;
+
 require("dotenv").config();
 
 const authRoutes = require("./routes/authRoutes");
@@ -12,7 +14,6 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 
-app.listen(5000, () => {
-  app.use("/uploads", express.static("uploads"));
-  console.log("Server berjalan di http://localhost:5000 🔥");
+app.listen(PORT, () => {
+  console.log(`🚀 Server berjalan di port ${PORT}`);
 });
