@@ -14,14 +14,11 @@ app.use(express.json());
 /* ======================
    DATABASE CONNECTION
 ====================== */
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log("✅ MongoDB Connected");
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB Connection Error:", err);
-    process.exit(1);
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => {
+    console.error("❌ MongoDB Error:", err.message)
+    process.exit(1)
   });
 
 /* ======================
