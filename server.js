@@ -1,77 +1,72 @@
+require("dotenv").config();
+
 const express = require("express");
+const mongoose = require("mongoose");
 const cors = require("cors");
-const dotenv = require("dotenv");
-const bcrypt = require("bcryptjs");
 
-dotenv.config();
-
-const connectDB = require("./config/db");
-const User = require("./models/User");
-const authRoutes = require("./routes/authRoutes");
-const laporanRoutes = require("./routes/laporanRoutes");
+// Import User Model
+require("./models/User");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-/* ===============================
-   CONNECT DATABASE
-================================= */
-connectDB();
-
-/* ===============================
-   MIDDLEWARE
-================================= */
-app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "https://sipentar-frontend.vercel.app"
-  ],
-  credentials: true
-}));
-
+// =====================
+// MIDDLEWARE
+// =====================
 app.use(express.json());
 
-/* ===============================
-   ROUTES
-================================= */
+app.use(
+  cors({
+    origin: "*", // nanti bisa diganti dengan URL frontend kamu
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
+// =====================
+// DATABASE CONNECTION
+// =====================
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB Connected");
+  })
+  .catch((err) => {
+    console.error("MongoDB Connection Error:", err.message);
+  });
+
+// =====================
+// ROUTES
+// =====================
+
+// Health Check
 app.get("/", (req, res) => {
-  res.send("Sipentar Backend Running 🚀");
+  res.status(200).json({
+    status: "success",
+    message: "SIPENTAR API is running 🚀",
+  });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/laporan", laporanRoutes);
-
-/* ===============================
-   CREATE ADMIN (TEMPORARY)
-================================= */
-app.post("/create-admin", async (req, res) => {
-  try {
-    const existing = await User.findOne({ email: "admin@gmail.com" });
-
-    if (existing) {
-      return res.send("Admin already exists");
-    }
-
-    const hashed = await bcrypt.hash("123456", 10);
-
-    const admin = new User({
-      email: "admin@gmail.com",
-      password: hashed,
-      role: "admin"
-    });
-
-    await admin.save();
-
-    res.send("Admin created successfully");
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Error creating admin");
-  }
+// Example Test Route
+app.get("/api/test", (req, res) => {
+  res.json({ message: "API Working Fine ✅" });
 });
 
-/* ===============================
-   START SERVER
-================================= */
+// =====================
+// ERROR HANDLER
+// =====================
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    status: "error",
+    message: "Something went wrong!",
+  });
+});
+
+// =====================
+// START SERVER (RAILWAY FIX)
+// =====================
+const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 Server berjalan di port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
