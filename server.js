@@ -26,4 +26,22 @@ app.get("/", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server berjalan di port ${PORT}`);
+
+app.post("/create-admin", async (req, res) => {
+  const bcrypt = require("bcryptjs");
+  const User = require("./models/User");
+
+  const hashed = await bcrypt.hash("123456", 10);
+
+  const admin = new User({
+    email: "admin@gmail.com",
+    password: hashed,
+    role: "admin"
+  });
+
+  await admin.save();
+
+  res.send("Admin created");
+});
+
 });
