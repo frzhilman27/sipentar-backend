@@ -2,7 +2,11 @@ const { Pool } = require("pg");
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : { rejectUnauthorized: false },
+  options: '-c statement_timeout=30000',
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+  // Memaksa resolusi IPv4 (Penting untuk menangani "AggregateError" di render/railway dgn Neon/Supabase/ElephantSQL)
 });
 
 pool.connect((err, client, release) => {
