@@ -1,38 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const multer = require("multer");
-const path = require("path");
+const laporanController = require("../controllers/laporanController");
+const auth = require("../middleware/auth");
+const upload = require("../middleware/upload");
 
-/* =========================
-   MULTER CONFIG
-========================= */
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    cb(
-      null,
-      Date.now() + "-" + file.originalname
-    );
-  },
-});
-
-const upload = multer({
-  storage: storage,
-});
-
-/* =========================
-   ROUTES
-========================= */
-
-// contoh route upload
-router.post("/upload", upload.single("file"), (req, res) => {
-  res.json({
-    message: "File uploaded successfully",
-    file: req.file,
-  });
-});
+// Apply upload.single('image') to parse multipart/form-data for the 'image' field
+router.post("/", auth, upload.single("image"), laporanController.createLaporan);
+router.get("/", auth, laporanController.getAllLaporan);
+router.put("/:id/status", auth, laporanController.updateStatus);
 
 module.exports = router;

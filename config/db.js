@@ -1,13 +1,19 @@
-const mysql = require("mysql2");
+const { Pool } = require("pg");
 
-const db = mysql.createConnection(process.env.MYSQL_URL);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+});
 
-db.connect((err) => {
+pool.connect((err, client, release) => {
   if (err) {
-    console.log("❌ Database gagal connect:", err);
+    console.error("❌ Database gagal connect:", err.message);
   } else {
-    console.log("✅ Database Railway terkoneksi");
+    console.log("✅ PostgreSQL Terkoneksi (via pg Pool)");
+    release();
   }
 });
 
-module.exports = db;
+module.exports = {
+  query: (text, params) => pool.query(text, params),
+};
