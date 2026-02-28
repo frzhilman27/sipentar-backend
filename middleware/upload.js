@@ -1,5 +1,11 @@
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
+
+const uploadDir = path.join(__dirname, "../uploads");
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Set storage engine
 const storage = multer.diskStorage({
@@ -15,26 +21,20 @@ const storage = multer.diskStorage({
 // Init upload
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // Max 5MB
-    fileFilter: function (req, file, cb) {
-        checkFileType(file, cb);
+    // limits: { fileSize: 5 * 1024 * 1024 }, // Dinonaktifkan sementara gara-gara HP kamera kekinian rata-rata ukurannya bengkak > 5MB
+    fileFilter: (req, file, cb) => {
+        const fileTypes = /jpeg|jpg|png/;
+        const extname = fileTypes.test(
+            path.extname(file.originalname).toLowerCase()
+        );
+        const mimetype = fileTypes.test(file.mimetype);
+
+        if (extname && mimetype) {
+            return cb(null, true);
+        } else {
+            cb(new Error("Hanya diperbolehkan format gambar (JPG/PNG)!"));
+        }
     },
 });
-
-// Check file type
-function checkFileType(file, cb) {
-    // Allowed ext
-    const filetypes = /jpeg|jpg|png|webp/;
-    // Check ext
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    // Check mime
-    const mimetype = filetypes.test(file.mimetype);
-
-    if (mimetype && extname) {
-        return cb(null, true);
-    } else {
-        cb("Hanya menerima gambar (JPEG, JPG, PNG, WEBP)!");
-    }
-}
 
 module.exports = upload;

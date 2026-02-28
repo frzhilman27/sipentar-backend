@@ -28,7 +28,8 @@ exports.createLaporan = async (req, res) => {
 
     res.status(201).json({ message: "Laporan berhasil dikirim" });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("Gagal simpan laporan:", err);
+    res.status(500).json({ error: err.message || "Gagal memproses unggahan atau pangkalan-data." });
   }
 };
 
