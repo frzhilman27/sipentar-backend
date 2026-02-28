@@ -144,7 +144,7 @@ exports.updatePassword = async (req, res) => {
 
 exports.updateProfileInfo = async (req, res) => {
   const userId = req.user.id;
-  const { newEmail, jenis_kelamin, no_hp } = req.body;
+  const { newEmail, jenis_kelamin, no_hp, remove_photo } = req.body;
   const foto_profil = req.file ? `/uploads/${req.file.filename}` : null;
 
   if (!newEmail) {
@@ -155,12 +155,20 @@ exports.updateProfileInfo = async (req, res) => {
     const result = await db.query("SELECT * FROM users WHERE id = $1", [userId]);
     if (result.rows.length === 0) return res.status(404).json({ message: "Pengguna tidak ditemukan." });
 
-    if (foto_profil) {
+    if (remove_photo === 'true') {
+      // Hapus referensi foto dari DB
+      await db.query(
+        "UPDATE users SET email = $1, jenis_kelamin = $2, no_hp = $3, foto_profil = NULL WHERE id = $4",
+        [newEmail, jenis_kelamin || null, no_hp || null, userId]
+      );
+    } else if (foto_profil) {
+      // Simpan foto baru
       await db.query(
         "UPDATE users SET email = $1, jenis_kelamin = $2, no_hp = $3, foto_profil = $4 WHERE id = $5",
         [newEmail, jenis_kelamin || null, no_hp || null, foto_profil, userId]
       );
     } else {
+      // Hanya update info tanpa merubah foto
       await db.query(
         "UPDATE users SET email = $1, jenis_kelamin = $2, no_hp = $3 WHERE id = $4",
         [newEmail, jenis_kelamin || null, no_hp || null, userId]
