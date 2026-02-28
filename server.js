@@ -27,8 +27,17 @@ app.use("/api/auth", authRoutes);
 app.use("/api/laporan", laporanRoutes);
 app.use("/api/notifications", notificationRoutes);
 
+app.get("/api/debug", (req, res) => {
+   res.json({
+      status: "Active",
+      db_url_set: !!process.env.DATABASE_URL,
+      jwt_secret_set: !!process.env.JWT_SECRET,
+      port: process.env.PORT || "NOT_SET",
+   });
+});
+
 app.get("/", (req, res) => {
-  res.json({ message: "Sipentar API Running OK" });
+   res.json({ message: "Sipentar API Running OK" });
 });
 
 /* ======================
@@ -36,5 +45,5 @@ app.get("/", (req, res) => {
 ====================== */
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+   console.log(`Server running on port ${PORT}`);
 });
