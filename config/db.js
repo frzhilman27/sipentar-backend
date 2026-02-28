@@ -3,10 +3,6 @@ const { Pool } = require("pg");
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgresql://neondb_owner:npg_MnU7SdIWxb0k@ep-lucky-snow-akp3fclj-pooler.c-3.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : { rejectUnauthorized: false },
-  options: '-c statement_timeout=30000',
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-  // Memaksa resolusi IPv4 (Penting untuk menangani "AggregateError" di render/railway dgn Neon/Supabase/ElephantSQL)
 });
 
 pool.connect((err, client, release) => {
