@@ -1,4 +1,6 @@
 require("dotenv").config();
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first"); // Wajib untuk mengatasi AggregateError PostgreSQL di Railway Cloud
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
