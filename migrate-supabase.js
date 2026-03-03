@@ -3,8 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-// URL dari screenshot pengguna dengan @ di-encode menjadi %40 untuk password
-const supabaseUrl = "postgresql://postgres.zjhpfxgidfjwhvbfmfku:sipentar%4012345@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres";
+const supabaseUrl = process.env.SUPABASE_URL;
+if (!supabaseUrl) {
+    throw new Error("SUPABASE_URL environment variable is not configured");
+}
 
 const pool = new Pool({
     connectionString: supabaseUrl,

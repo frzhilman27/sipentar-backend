@@ -5,8 +5,13 @@ module.exports = function (req, res, next) {
 
   if (!token) return res.status(401).json({ message: "Unauthorized" });
 
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    return res.status(500).json({ message: "Konfigurasi server belum lengkap (JWT_SECRET tidak disetel)" });
+  }
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "SECRET_KEY");
+    const decoded = jwt.verify(token, secret);
     req.user = decoded;
     next();
   } catch (err) {

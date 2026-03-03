@@ -1,7 +1,9 @@
 const { Pool } = require('pg');
 
-// Menggunakan URL Database yang sudah dipastikan jalan (Hardcoded Neon DB dari db.js yang sukses)
-const dbUrl = "postgresql://neondb_owner:npg_MnU7SdIWxb0k@ep-lucky-snow-akp3fclj-pooler.c-3.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) {
+    throw new Error("DATABASE_URL environment variable is not configured");
+}
 
 const pool = new Pool({
     connectionString: dbUrl,

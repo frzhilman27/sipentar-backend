@@ -60,9 +60,13 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "Password salah" });
     }
 
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return res.status(500).json({ message: "Konfigurasi server belum lengkap (JWT_SECRET tidak disetel)" });
+    }
     const token = jwt.sign(
       { id: user.id, role: user.role },
-      process.env.JWT_SECRET || "SECRET_KEY",
+      secret,
       { expiresIn: "1d" }
     );
 
