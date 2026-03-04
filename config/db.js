@@ -1,12 +1,13 @@
 const { Pool } = require("pg");
+require("dotenv").config();
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  throw new Error("DATABASE_URL environment variable is not configured");
+  console.warn("⚠️ DATABASE_URL environment variable is not configured. Database queries will fail.");
 }
 
 const pool = new Pool({
-  connectionString,
+  connectionString: connectionString || "postgresql://dummy:dummy@localhost/dummy",
   ssl: { rejectUnauthorized: false },
 });
 
