@@ -4,12 +4,9 @@ const dns = require("dns");
 
 dns.setDefaultResultOrder("ipv4first");
 
-let connectionString = process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   console.warn("⚠️ DATABASE_URL environment variable is not configured. Database queries will fail.");
-} else if (connectionString.includes("monorail.proxy.rlwy.net")) {
-  // Hardcode IPv4 Vercel workaround untuk mencegah AggregateError (IPv6 failure)
-  connectionString = connectionString.replace("monorail.proxy.rlwy.net", "66.33.22.237");
 }
 
 const pool = new Pool({
