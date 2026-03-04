@@ -149,7 +149,10 @@ exports.updatePassword = async (req, res) => {
 exports.updateProfileInfo = async (req, res) => {
   const userId = req.user.id;
   const { newEmail, jenis_kelamin, no_hp, remove_photo } = req.body;
-  const foto_profil = req.file ? `/uploads/${req.file.filename}` : null;
+  let foto_profil = null;
+  if (req.file && req.file.buffer) {
+    foto_profil = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+  }
 
   if (!newEmail) {
     return res.status(400).json({ message: "Email wajib diisi." });

@@ -7,7 +7,10 @@ exports.createLaporan = async (req, res) => {
 
   const { judul, isi } = req.body;
   const userId = req.user.id;
-  const imageUrl = req.file ? req.file.filename : null;
+  let imageUrl = null;
+  if (req.file && req.file.buffer) {
+    imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+  }
 
   try {
     const insertResult = await db.query(
