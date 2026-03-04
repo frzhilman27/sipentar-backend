@@ -2,18 +2,20 @@ const { Pool } = require("pg");
 require("dotenv").config();
 const dns = require("dns");
 
-// Memaksa DNS node resolving ke IPv4 karena Railway DB dan Node 20 Vercel sering konflik IPv6 yang menyebabkan AggregateError
 dns.setDefaultResultOrder("ipv4first");
 
-const connectionString = process.env.DATABASE_URL;
+let connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   console.warn("⚠️ DATABASE_URL environment variable is not configured. Database queries will fail.");
+} else if (connectionString.includes("monorail.proxy.rlwy.net")) {
+  // Hardcode IPv4 Vercel workaround untuk mencegah AggregateError (IPv6 failure)
+  connectionString = connectionString.replace("monorail.proxy.rlwy.net", "66.33.22.237");
 }
 
 const pool = new Pool({
   connectionString: connectionString || "postgresql://dummy:dummy@localhost/dummy",
   ssl: { rejectUnauthorized: false },
-  max: process.env.VERCEL ? 1 : 10, // Di serverless seperti Vercel, max 1 koneksi per fungsi agar tidak menghabiskan limit Railway
+  max: process.env.VERCEL ? 1 : 10,
   idleTimeoutMillis: process.env.VERCEL ? 1000 : 30000,
 });
 
