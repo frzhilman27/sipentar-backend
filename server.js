@@ -43,9 +43,20 @@ app.get("/", (req, res) => {
 });
 
 /* ======================
-   START SERVER
+   START SERVER / EXPORT APP
 ====================== */
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-   console.log(`Server running on port ${PORT}`);
-});
+
+if (process.env.VERCEL) {
+   // Jika berjalan di Vercel, ekspor aplikasi untuk Serverless Functions
+   console.log("Running in Vercel Serverless environment");
+   module.exports = app;
+} else {
+   // Jika berjalan lokal atau di server biasa (seperti Railway)
+   app.listen(PORT, () => {
+      console.log(`Server running locally on port ${PORT}`);
+   });
+
+   // Tambahan untuk antisipasi jika di-require dari file lain (seperti api/index.js)
+   module.exports = app;
+}
