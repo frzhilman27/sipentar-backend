@@ -48,15 +48,15 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 8080;
 
 if (process.env.VERCEL) {
-   // Jika berjalan di Vercel, ekspor aplikasi untuk Serverless Functions
-   console.log("Running in Vercel Serverless environment");
+   // Jika berjalan di Vercel, cukup mengekspor aplikasi tanpa app.listen
+   console.log("Exporting app for Vercel Serverless Function");
    module.exports = app;
-} else {
-   // Jika berjalan lokal atau di server biasa (seperti Railway)
+} else if (require.main === module) {
+   // Jika file ini dijalankan langsung lewat Node (contoh: `node server.js` atau di Railway)
    app.listen(PORT, () => {
       console.log(`Server running locally on port ${PORT}`);
    });
-
-   // Tambahan untuk antisipasi jika di-require dari file lain (seperti api/index.js)
+} else {
+   // Jika di-require oleh file lain selain Vercel
    module.exports = app;
 }
