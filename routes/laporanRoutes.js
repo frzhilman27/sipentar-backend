@@ -5,7 +5,7 @@ const auth = require("../middleware/auth");
 const upload = require("../middleware/upload");
 
 // Apply upload.single('image') to parse multipart/form-data for the 'image' field
-router.post("/", auth, upload.single("image"), laporanController.createLaporan);
+router.post("/", auth, laporanController.createLaporan);
 router.get("/", auth, laporanController.getAllLaporan);
 router.put("/:id/status", auth, laporanController.updateStatus);
 

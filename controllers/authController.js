@@ -152,11 +152,7 @@ exports.updateProfileInfo = async (req, res) => {
   console.log("req.file:", req.file ? "File Exists - Buffer Length: " + (req.file.buffer ? req.file.buffer.length : 'No Buffer') : "UNDEFINED / NULL");
 
   const userId = req.user.id;
-  const { newEmail, jenis_kelamin, no_hp, remove_photo } = req.body;
-  let foto_profil = null;
-  if (req.file && req.file.buffer) {
-    foto_profil = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
-  }
+  const { newEmail, jenis_kelamin, no_hp, remove_photo, foto_profil } = req.body;
 
   if (!newEmail) {
     return res.status(400).json({ message: "Email wajib diisi." });

@@ -21,7 +21,7 @@ router.post("/login", login);
 router.get("/me", authMiddleware, getMe);
 router.put("/profile/email", authMiddleware, updateEmail);
 router.put("/profile/password", authMiddleware, updatePassword);
-router.put("/profile/info", authMiddleware, upload.single("foto_profil"), updateProfileInfo);
+router.put("/profile/info", authMiddleware, updateProfileInfo);
 router.delete("/profile", authMiddleware, deleteAccount);
 
 module.exports = router;
