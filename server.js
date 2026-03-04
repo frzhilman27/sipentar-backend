@@ -20,7 +20,7 @@ app.use(express.json());
    STATIC FILES
 ====================== */
 // Serve static files from the 'uploads' folder
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /* ======================
    ROUTES
