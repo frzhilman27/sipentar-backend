@@ -147,6 +147,10 @@ exports.updatePassword = async (req, res) => {
 };
 
 exports.updateProfileInfo = async (req, res) => {
+  console.log("🔥 Vercel Multipart Debug: updateProfileInfo triggered");
+  console.log("req.body:", req.body);
+  console.log("req.file:", req.file ? "File Exists - Buffer Length: " + (req.file.buffer ? req.file.buffer.length : 'No Buffer') : "UNDEFINED / NULL");
+
   const userId = req.user.id;
   const { newEmail, jenis_kelamin, no_hp, remove_photo } = req.body;
   let foto_profil = null;
