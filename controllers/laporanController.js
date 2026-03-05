@@ -34,12 +34,20 @@ exports.createLaporan = async (req, res) => {
 
 exports.getAllLaporan = async (req, res) => {
   try {
-    const result = await db.query(
-      `SELECT laporan.*, users.name 
-       FROM laporan 
-       JOIN users ON laporan.user_id = users.id 
-       ORDER BY laporan.created_at DESC`
-    );
+    let queryArgs = [];
+    let queryStr = `SELECT laporan.*, users.name 
+                    FROM laporan 
+                    JOIN users ON laporan.user_id = users.id`;
+
+    // Jika bukan admin, hanya ambil laporan milik dia sendiri
+    if (req.user.role !== 'admin') {
+      queryStr += ` WHERE laporan.user_id = $1`;
+      queryArgs.push(req.user.id);
+    }
+
+    queryStr += ` ORDER BY laporan.created_at DESC`;
+
+    const result = await db.query(queryStr, queryArgs);
     res.json(result.rows);
   } catch (err) {
     res.status(400).json({ error: err.message });
