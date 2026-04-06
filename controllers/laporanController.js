@@ -48,9 +48,13 @@ exports.getAllLaporan = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, adminEvidenceUrl } = req.body;
   try {
-    await db.query("UPDATE laporan SET status=$1 WHERE id=$2", [status, id]);
+    if ((status === 'Diproses' || status === 'Selesai') && (!adminEvidenceUrl || adminEvidenceUrl.trim() === '')) {
+      return res.status(400).json({ error: `Foto lampiran bukti wajib diunggah saat merubah status ke "${status}".` });
+    }
+
+    await db.query("UPDATE laporan SET status=$1, admin_evidence_url=COALESCE($2, admin_evidence_url) WHERE id=$3", [status, adminEvidenceUrl || null, id]);
 
     // Get the user ID and Title of the report to notify the citizen
     const reportQuery = await db.query("SELECT user_id, judul FROM laporan WHERE id=$1", [id]);
