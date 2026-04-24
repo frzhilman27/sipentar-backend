@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-const { register, login, updateEmail, updatePassword, updateProfileInfo, getMe, deleteAccount } = require("../controllers/authController");
+const { register, login, updateEmail, updatePassword, updateProfileInfo, getMe, deleteAccount, getAllUsers, verifyUser } = require("../controllers/authController");
 const authMiddleware = require("../middleware/auth");
 
 const storage = multer.diskStorage({
@@ -23,5 +23,8 @@ router.put("/profile/email", authMiddleware, updateEmail);
 router.put("/profile/password", authMiddleware, updatePassword);
 router.put("/profile/info", authMiddleware, updateProfileInfo);
 router.delete("/profile", authMiddleware, deleteAccount);
+
+router.get("/users", authMiddleware, getAllUsers);
+router.put("/verify/:id", authMiddleware, verifyUser);
 
 module.exports = router;

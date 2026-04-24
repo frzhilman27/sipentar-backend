@@ -8,6 +8,7 @@ CREATE TABLE users (
     jenis_kelamin VARCHAR(20),
     no_hp VARCHAR(20),
     foto_profil VARCHAR(255),
+    is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -17,6 +18,15 @@ CREATE TABLE laporan (
     judul VARCHAR(255) NOT NULL,
     isi TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'Menunggu',
+    image_url VARCHAR(255),
+    admin_evidence_urls JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE laporan_history (
+    id SERIAL PRIMARY KEY,
+    laporan_id INTEGER REFERENCES laporan(id) ON DELETE CASCADE,
+    status VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

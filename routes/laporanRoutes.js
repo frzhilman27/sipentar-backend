@@ -8,5 +8,7 @@ const upload = require("../middleware/upload");
 router.post("/", auth, laporanController.createLaporan);
 router.get("/", auth, laporanController.getAllLaporan);
 router.put("/:id/status", auth, laporanController.updateStatus);
+router.delete("/:id", auth, laporanController.deleteLaporan);
+router.get("/:id/history", auth, laporanController.getLaporanHistory);
 
 module.exports = router;

@@ -1,20 +1,38 @@
 const db = require("../config/db");
 
 exports.createLaporan = async (req, res) => {
-  console.log("createLaporan called.");
-  console.log("req.body:", req.body);
-  console.log("req.file:", req.file);
-
   const { judul, isi, imageUrl } = req.body;
   const userId = req.user.id;
 
   try {
+    // 1. Check if user is verified
+    const userCheck = await db.query("SELECT is_verified FROM users WHERE id = $1", [userId]);
+    if (userCheck.rows.length === 0 || !userCheck.rows[0].is_verified) {
+      return res.status(403).json({ error: "Akun Anda belum diverifikasi oleh Admin. Tidak dapat membuat laporan." });
+    }
+
+    // 2. Prevent Duplicate (Exact matching judul and isi within 24 hours to prevent spam)
+    const duplicateCheck = await db.query(
+      "SELECT id FROM laporan WHERE user_id = $1 AND judul = $2 AND isi = $3 AND created_at > NOW() - INTERVAL '24 hours'",
+      [userId, judul, isi]
+    );
+    if (duplicateCheck.rows.length > 0) {
+      return res.status(400).json({ error: "Laporan serupa sudah pernah dikirimkan dalam 24 jam terakhir." });
+    }
+
+    // 3. Insert Laporan
     const insertResult = await db.query(
       "INSERT INTO laporan (user_id, judul, isi, image_url) VALUES ($1, $2, $3, $4) RETURNING id",
       [userId, judul, isi, imageUrl]
     );
 
     const laporanId = insertResult.rows[0].id;
+
+    // 4. Save to History
+    await db.query(
+      "INSERT INTO laporan_history (laporan_id, status) VALUES ($1, $2)",
+      [laporanId, 'Menunggu']
+    );
 
     // Create notifications for all admins
     const admins = await db.query("SELECT id FROM users WHERE role = 'admin'");
@@ -34,6 +52,7 @@ exports.createLaporan = async (req, res) => {
 
 exports.getAllLaporan = async (req, res) => {
   try {
+    // Also select admin_evidence_urls array
     const result = await db.query(
       `SELECT laporan.*, users.name 
        FROM laporan 
@@ -48,26 +67,66 @@ exports.getAllLaporan = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
   const { id } = req.params;
-  const { status, adminEvidenceUrl } = req.body;
+  const { status, adminEvidenceUrls } = req.body; // Expect array now
   try {
-    if ((status === 'Diproses' || status === 'Selesai') && (!adminEvidenceUrl || adminEvidenceUrl.trim() === '')) {
+    if ((status === 'Diproses' || status === 'Selesai') && (!adminEvidenceUrls || adminEvidenceUrls.length === 0)) {
       return res.status(400).json({ error: `Foto lampiran bukti wajib diunggah saat merubah status ke "${status}".` });
     }
 
-    await db.query("UPDATE laporan SET status=$1, admin_evidence_url=COALESCE($2, admin_evidence_url) WHERE id=$3", [status, adminEvidenceUrl || null, id]);
+    // Check existing report status to prevent duplicate history if status didn't change (Optional, but good practice)
+    const existing = await db.query("SELECT status FROM laporan WHERE id=$1", [id]);
+    const oldStatus = existing.rows.length > 0 ? existing.rows[0].status : null;
 
-    // Get the user ID and Title of the report to notify the citizen
-    const reportQuery = await db.query("SELECT user_id, judul FROM laporan WHERE id=$1", [id]);
-    if (reportQuery.rows.length > 0) {
-      const report = reportQuery.rows[0];
-      await db.query(
-        "INSERT INTO notifications (user_id, laporan_id, message) VALUES ($1, $2, $3)",
-        [report.user_id, id, `Status laporan Anda "${report.judul}" berubah menjadi: ${status}`]
-      );
+    if (adminEvidenceUrls) {
+        // If evidence provided, overwrite the JSON array
+        await db.query("UPDATE laporan SET status=$1, admin_evidence_urls=$2::jsonb WHERE id=$3", [status, JSON.stringify(adminEvidenceUrls), id]);
+    } else {
+        await db.query("UPDATE laporan SET status=$1 WHERE id=$2", [status, id]);
+    }
+
+    if (oldStatus !== status) {
+        // Only log to history if status actually changed
+        await db.query(
+            "INSERT INTO laporan_history (laporan_id, status) VALUES ($1, $2)",
+            [id, status]
+        );
+        
+        // Get the user ID and Title of the report to notify the citizen
+        const reportQuery = await db.query("SELECT user_id, judul FROM laporan WHERE id=$1", [id]);
+        if (reportQuery.rows.length > 0) {
+          const report = reportQuery.rows[0];
+          await db.query(
+            "INSERT INTO notifications (user_id, laporan_id, message) VALUES ($1, $2, $3)",
+            [report.user_id, id, `Status laporan Anda "${report.judul}" berubah menjadi: ${status}`]
+          );
+        }
     }
 
     res.json({ message: "Status diperbarui" });
   } catch (err) {
+    console.error(err);
     res.status(400).json({ error: err.message });
   }
+};
+
+exports.deleteLaporan = async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query("DELETE FROM laporan WHERE id = $1", [id]);
+        res.json({ message: "Laporan berhasil dihapus" });
+    } catch (err) {
+        console.error("Gagal hapus laporan:", err);
+        res.status(500).json({ error: "Gagal menghapus laporan" });
+    }
+};
+
+exports.getLaporanHistory = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await db.query("SELECT * FROM laporan_history WHERE laporan_id = $1 ORDER BY created_at ASC", [id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Gagal ambil riwayat:", err);
+        res.status(500).json({ error: "Gagal mengambil histori laporan" });
+    }
 };

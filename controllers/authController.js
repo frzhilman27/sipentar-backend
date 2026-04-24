@@ -236,3 +236,32 @@ exports.deleteAccount = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getAllUsers = async (req, res) => {
+  // Only admin should access this
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: "Akses ditolak" });
+  }
+  try {
+    const result = await db.query(
+      "SELECT id, nik, name, email, role, jenis_kelamin, no_hp, foto_profil, is_verified, created_at FROM users ORDER BY created_at DESC"
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.verifyUser = async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: "Akses ditolak" });
+  }
+  const { id } = req.params;
+  const { is_verified } = req.body;
+  try {
+    await db.query("UPDATE users SET is_verified = $1 WHERE id = $2", [is_verified, id]);
+    res.json({ message: "Status verifikasi pengguna berhasil diperbarui" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
