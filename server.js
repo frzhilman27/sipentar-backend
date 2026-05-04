@@ -8,6 +8,7 @@ const authRoutes = require("./routes/authRoutes");
 const laporanRoutes = require("./routes/laporanRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const aiRoutes = require("./routes/aiRoutes");
+const publicRoutes = require("./routes/publicRoutes");
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/laporan", laporanRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/public", publicRoutes);
 
 app.get("/api/debug", (req, res) => {
    res.json({
