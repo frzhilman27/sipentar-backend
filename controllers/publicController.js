@@ -2,7 +2,7 @@ const db = require("../config/db");
 
 exports.getStats = async (req, res) => {
   try {
-    const totalWargaResult = await db.query("SELECT COUNT(*) FROM users WHERE role = 'warga'");
+    const totalWargaResult = await db.query("SELECT COUNT(*) FROM users WHERE role = 'user'");
     const laporanSelesaiResult = await db.query("SELECT COUNT(*) FROM laporan WHERE status = 'Selesai'");
     // "Layanan Aktif" represent total laporan yang sedang diproses atau menunggu
     const layananAktifResult = await db.query("SELECT COUNT(*) FROM laporan WHERE status IN ('Menunggu', 'Diproses')");
