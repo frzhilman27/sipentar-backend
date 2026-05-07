@@ -46,87 +46,140 @@ exports.createLaporan = async (req, res) => {
     res.status(201).json({ message: "Laporan berhasil dikirim" });
   } catch (err) {
     console.error("Gagal simpan laporan:", err);
-    res.status(500).json({ error: err.message || "Gagal memproses unggahan atau pangkalan-data." });
+    res.status(500).json({ error: "Gagal memproses laporan." });
   }
 };
 
 exports.getAllLaporan = async (req, res) => {
   try {
-    // Also select admin_evidence_urls array
-    const result = await db.query(
-      `SELECT laporan.*, users.name 
-       FROM laporan 
-       JOIN users ON laporan.user_id = users.id 
-       ORDER BY laporan.created_at DESC`
-    );
+    let result;
+    if (req.user.role === 'admin') {
+      // Admin melihat semua laporan
+      result = await db.query(
+        `SELECT laporan.*, users.name 
+         FROM laporan 
+         JOIN users ON laporan.user_id = users.id 
+         ORDER BY laporan.created_at DESC`
+      );
+    } else {
+      // User biasa hanya melihat laporan miliknya sendiri
+      result = await db.query(
+        `SELECT laporan.*, users.name 
+         FROM laporan 
+         JOIN users ON laporan.user_id = users.id 
+         WHERE laporan.user_id = $1
+         ORDER BY laporan.created_at DESC`,
+        [req.user.id]
+      );
+    }
     res.json(result.rows);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("Gagal ambil laporan:", err);
+    res.status(500).json({ error: "Gagal mengambil data laporan." });
   }
 };
 
 exports.updateStatus = async (req, res) => {
+  // Hanya admin yang boleh mengubah status laporan
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: "Akses ditolak. Hanya admin yang dapat mengubah status laporan." });
+  }
+
   const { id } = req.params;
-  const { status, adminEvidenceUrls } = req.body; // Expect array now
+  const parsedId = parseInt(id, 10);
+  if (isNaN(parsedId)) {
+    return res.status(400).json({ error: "ID laporan tidak valid." });
+  }
+
+  const { status, adminEvidenceUrls } = req.body;
+
+  // Validasi status value
+  const validStatuses = ['Menunggu', 'Diproses', 'Selesai'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: "Status tidak valid." });
+  }
+
   try {
     if ((status === 'Diproses' || status === 'Selesai') && (!adminEvidenceUrls || adminEvidenceUrls.length === 0)) {
       return res.status(400).json({ error: `Foto lampiran bukti wajib diunggah saat merubah status ke "${status}".` });
     }
 
-    // Check existing report status to prevent duplicate history if status didn't change (Optional, but good practice)
-    const existing = await db.query("SELECT status FROM laporan WHERE id=$1", [id]);
-    const oldStatus = existing.rows.length > 0 ? existing.rows[0].status : null;
+    // Check existing report status to prevent duplicate history if status didn't change
+    const existing = await db.query("SELECT status FROM laporan WHERE id=$1", [parsedId]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: "Laporan tidak ditemukan." });
+    }
+    const oldStatus = existing.rows[0].status;
 
     if (adminEvidenceUrls) {
         // If evidence provided, overwrite the JSON array
-        await db.query("UPDATE laporan SET status=$1, admin_evidence_urls=$2::jsonb WHERE id=$3", [status, JSON.stringify(adminEvidenceUrls), id]);
+        await db.query("UPDATE laporan SET status=$1, admin_evidence_urls=$2::jsonb WHERE id=$3", [status, JSON.stringify(adminEvidenceUrls), parsedId]);
     } else {
-        await db.query("UPDATE laporan SET status=$1 WHERE id=$2", [status, id]);
+        await db.query("UPDATE laporan SET status=$1 WHERE id=$2", [status, parsedId]);
     }
 
     if (oldStatus !== status) {
         // Only log to history if status actually changed
         await db.query(
             "INSERT INTO laporan_history (laporan_id, status) VALUES ($1, $2)",
-            [id, status]
+            [parsedId, status]
         );
         
         // Get the user ID and Title of the report to notify the citizen
-        const reportQuery = await db.query("SELECT user_id, judul FROM laporan WHERE id=$1", [id]);
+        const reportQuery = await db.query("SELECT user_id, judul FROM laporan WHERE id=$1", [parsedId]);
         if (reportQuery.rows.length > 0) {
           const report = reportQuery.rows[0];
           await db.query(
             "INSERT INTO notifications (user_id, laporan_id, message) VALUES ($1, $2, $3)",
-            [report.user_id, id, `Status laporan Anda "${report.judul}" berubah menjadi: ${status}`]
+            [report.user_id, parsedId, `Status laporan Anda "${report.judul}" berubah menjadi: ${status}`]
           );
         }
     }
 
     res.json({ message: "Status diperbarui" });
   } catch (err) {
-    console.error(err);
-    res.status(400).json({ error: err.message });
+    console.error("Gagal update status:", err);
+    res.status(500).json({ error: "Gagal memperbarui status laporan." });
   }
 };
 
 exports.deleteLaporan = async (req, res) => {
+    // Hanya admin yang boleh menghapus laporan
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Akses ditolak. Hanya admin yang dapat menghapus laporan." });
+    }
+
     const { id } = req.params;
+    const parsedId = parseInt(id, 10);
+    if (isNaN(parsedId)) {
+      return res.status(400).json({ error: "ID laporan tidak valid." });
+    }
+
     try {
-        await db.query("DELETE FROM laporan WHERE id = $1", [id]);
+        const check = await db.query("SELECT id FROM laporan WHERE id = $1", [parsedId]);
+        if (check.rows.length === 0) {
+          return res.status(404).json({ error: "Laporan tidak ditemukan." });
+        }
+        await db.query("DELETE FROM laporan WHERE id = $1", [parsedId]);
         res.json({ message: "Laporan berhasil dihapus" });
     } catch (err) {
         console.error("Gagal hapus laporan:", err);
-        res.status(500).json({ error: "Gagal menghapus laporan" });
+        res.status(500).json({ error: "Gagal menghapus laporan." });
     }
 };
 
 exports.getLaporanHistory = async (req, res) => {
     const { id } = req.params;
+    const parsedId = parseInt(id, 10);
+    if (isNaN(parsedId)) {
+      return res.status(400).json({ error: "ID laporan tidak valid." });
+    }
+
     try {
-        const result = await db.query("SELECT * FROM laporan_history WHERE laporan_id = $1 ORDER BY created_at ASC", [id]);
+        const result = await db.query("SELECT * FROM laporan_history WHERE laporan_id = $1 ORDER BY created_at ASC", [parsedId]);
         res.json(result.rows);
     } catch (err) {
         console.error("Gagal ambil riwayat:", err);
-        res.status(500).json({ error: "Gagal mengambil histori laporan" });
+        res.status(500).json({ error: "Gagal mengambil histori laporan." });
     }
 };

@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
 // Init upload
 const upload = multer({
     storage: storage,
-    // limits: { fileSize: 5 * 1024 * 1024 }, // Dinonaktifkan sementara gara-gara HP kamera kekinian rata-rata ukurannya bengkak > 5MB
+    limits: { fileSize: 10 * 1024 * 1024 }, // Batas 10MB per file
     fileFilter: (req, file, cb) => {
         const fileTypes = /jpeg|jpg|png/;
         const extname = fileTypes.test(

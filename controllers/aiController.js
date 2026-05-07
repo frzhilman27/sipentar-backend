@@ -36,7 +36,7 @@ Jangan memberikan janji perbaikan, cukup informasikan bahwa setiap laporan akan 
       res.status(200).json({ reply: response.text });
     } catch (error) {
       console.error("AI Generate Content Error:", error);
-      res.status(500).json({ error: "Mohon maaf, SipentarBot sedang mengalami gangguan atau sibuk. Silakan coba beberapa saat lagi." });
+      res.status(500).json({ error: "Mohon maaf, SipentarBot sedang mengalami gangguan. Silakan coba beberapa saat lagi." });
     }
   },
 

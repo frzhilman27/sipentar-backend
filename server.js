@@ -1,6 +1,6 @@
 require("dotenv").config();
 const dns = require("dns");
-dns.setDefaultResultOrder("ipv4first"); // Wajib untuk mengatasi AggregateError PostgreSQL di Railway Cloud
+dns.setDefaultResultOrder("ipv4first"); // Mengatasi AggregateError PostgreSQL di cloud environments
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -15,15 +15,28 @@ const app = express();
 /* ======================
    MIDDLEWARE
 ====================== */
-app.use(cors());
+// CORS — hanya izinkan frontend yang terdaftar
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:3000',
+].filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, server-to-server, curl)
+    if (!origin) return callback(null, true);
+    // Allow any *.vercel.app for preview deployments
+    if (origin.endsWith('.vercel.app') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error('Akses CORS tidak diizinkan dari origin: ' + origin));
+  },
+  credentials: true,
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-
-/* ======================
-   STATIC FILES
-====================== */
-// Serve static files from the 'uploads' folder
-// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /* ======================
    ROUTES
@@ -33,15 +46,6 @@ app.use("/api/laporan", laporanRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/public", publicRoutes);
-
-app.get("/api/debug", (req, res) => {
-   res.json({
-      status: "Active",
-      db_url_set: !!process.env.DATABASE_URL,
-      jwt_secret_set: !!process.env.JWT_SECRET,
-      port: process.env.PORT || "NOT_SET",
-   });
-});
 
 app.get("/", (req, res) => {
    res.json({ message: "Sipentar API Running OK" });
@@ -56,7 +60,7 @@ const PORT = process.env.PORT || 8080;
 module.exports = app;
 
 if (require.main === module) {
-   // Jika file ini dijalankan langsung lewat Node (contoh: `node server.js` atau di Railway)
+   // Jika file ini dijalankan langsung lewat Node (contoh: `node server.js`)
    app.listen(PORT, () => {
       console.log(`Server running locally on port ${PORT}`);
    });
