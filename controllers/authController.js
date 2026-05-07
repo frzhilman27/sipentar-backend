@@ -3,15 +3,15 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
-  const { nik, name, email, password, jenis_kelamin, no_hp } = req.body;
+  const { nik, name, email, password, jenis_kelamin, no_hp, rt, rw, tempat_lahir, tanggal_lahir, agama, pekerjaan } = req.body;
   if (!nik || nik.length < 16) {
     return res.status(400).json({ message: "NIK harus 16 digit" });
   }
   try {
     const hashed = await bcrypt.hash(password, 10);
     await db.query(
-      "INSERT INTO users (nik, name, email, password, jenis_kelamin, no_hp) VALUES ($1, $2, $3, $4, $5, $6)",
-      [nik, name, email, hashed, jenis_kelamin || null, no_hp || null]
+      "INSERT INTO users (nik, name, email, password, jenis_kelamin, no_hp, rt, rw, tempat_lahir, tanggal_lahir, agama, pekerjaan) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+      [nik, name, email, hashed, jenis_kelamin || null, no_hp || null, rt || null, rw || null, tempat_lahir || null, tanggal_lahir || null, agama || null, pekerjaan || null]
     );
     res.json({ message: "User berhasil daftar" });
   } catch (err) {

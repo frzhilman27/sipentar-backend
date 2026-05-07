@@ -7,6 +7,12 @@ CREATE TABLE users (
     role VARCHAR(50) DEFAULT 'user',
     jenis_kelamin VARCHAR(20),
     no_hp VARCHAR(20),
+    rt VARCHAR(10),
+    rw VARCHAR(10),
+    tempat_lahir VARCHAR(100),
+    tanggal_lahir DATE,
+    agama VARCHAR(50),
+    pekerjaan VARCHAR(100),
     foto_profil VARCHAR(255),
     is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
