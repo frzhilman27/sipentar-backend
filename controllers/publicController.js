@@ -13,7 +13,7 @@ exports.getStats = async (req, res) => {
       totalWarga: totalWargaResult.rows[0].count,
       laporanSelesai: laporanSelesaiResult.rows[0].count,
       layananAktif: layananAktifResult.rows[0].count,
-      rtRw: "4/24"
+      rtRw: "27/9"
     });
   } catch (err) {
     console.error("Gagal mengambil statistik:", err);
