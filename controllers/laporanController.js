@@ -1,23 +1,57 @@
 const db = require("../config/db");
 
+// In-memory idempotency store (per-process; resets on restart)
+const _idempotencyStore = new Map();
+const IDEMPOTENCY_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+// Cleanup stale idempotency keys every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of _idempotencyStore) {
+    if (now - entry.timestamp > IDEMPOTENCY_TTL_MS) {
+      _idempotencyStore.delete(key);
+    }
+  }
+}, 10 * 60 * 1000);
+
 exports.createLaporan = async (req, res) => {
   const { judul, isi, imageUrl } = req.body;
   const userId = req.user.id;
 
   try {
+    // 0. Idempotency Key check (prevents double-click / network retry duplicates)
+    const idempotencyKey = req.headers['x-idempotency-key'];
+    if (idempotencyKey) {
+      const storeKey = `${userId}:${idempotencyKey}`;
+      const existing = _idempotencyStore.get(storeKey);
+      if (existing) {
+        // Return the same response as the original request
+        return res.status(existing.statusCode).json(existing.body);
+      }
+    }
+
     // 1. Check if user is verified
     const userCheck = await db.query("SELECT is_verified FROM users WHERE id = $1", [userId]);
     if (userCheck.rows.length === 0 || !userCheck.rows[0].is_verified) {
       return res.status(403).json({ error: "Akun Anda belum diverifikasi oleh Admin. Tidak dapat membuat laporan." });
     }
 
-    // 2. Prevent Duplicate (Exact matching judul and isi within 24 hours to prevent spam)
+    // 2a. Anti-Spam: Prevent same report type from same user within 5 minutes
+    const spamCheck = await db.query(
+      "SELECT id FROM laporan WHERE user_id = $1 AND judul = $2 AND created_at > NOW() - INTERVAL '5 minutes'",
+      [userId, judul]
+    );
+    if (spamCheck.rows.length > 0) {
+      return res.status(429).json({ error: "Anda baru saja mengirim laporan dengan jenis yang sama. Harap tunggu beberapa menit sebelum mengirim laporan serupa." });
+    }
+
+    // 2b. Prevent Exact Duplicate (same judul AND isi within 24 hours)
     const duplicateCheck = await db.query(
       "SELECT id FROM laporan WHERE user_id = $1 AND judul = $2 AND isi = $3 AND created_at > NOW() - INTERVAL '24 hours'",
       [userId, judul, isi]
     );
     if (duplicateCheck.rows.length > 0) {
-      return res.status(400).json({ error: "Laporan serupa sudah pernah dikirimkan dalam 24 jam terakhir." });
+      return res.status(409).json({ error: "Laporan dengan isi yang sama sudah pernah dikirimkan dalam 24 jam terakhir. Silakan periksa daftar laporan Anda." });
     }
 
     // 3. Insert Laporan
@@ -43,7 +77,19 @@ exports.createLaporan = async (req, res) => {
       );
     }
 
-    res.status(201).json({ message: "Laporan berhasil dikirim" });
+    const responseBody = { message: "Laporan berhasil dikirim", laporanId };
+    const statusCode = 201;
+
+    // Store idempotency result
+    if (idempotencyKey) {
+      _idempotencyStore.set(`${userId}:${idempotencyKey}`, {
+        statusCode,
+        body: responseBody,
+        timestamp: Date.now()
+      });
+    }
+
+    res.status(statusCode).json(responseBody);
   } catch (err) {
     console.error("Gagal simpan laporan:", err);
     res.status(500).json({ error: "Gagal memproses laporan." });
