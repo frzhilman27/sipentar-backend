@@ -42,7 +42,7 @@ Jangan memberikan janji perbaikan, cukup informasikan bahwa setiap laporan akan 
 
   validatePhoto: async (req, res) => {
     try {
-      const { imageBase64 } = req.body;
+      const { imageBase64, kategoriLaporan } = req.body;
       
       if (!process.env.GEMINI_API_KEY) {
         return res.status(500).json({ error: "GEMINI_API_KEY belum dikonfigurasi." });
@@ -57,11 +57,12 @@ Jangan memberikan janji perbaikan, cukup informasikan bahwa setiap laporan akan 
       // Remove data:image/...;base64, prefix if it exists
       const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
+      const kategori = kategoriLaporan || "infrastruktur atau fasilitas publik";
       const prompt = `Anda adalah AI pemeriksa kelayakan foto laporan infrastruktur desa.
 Tugas Anda:
-Periksa apakah gambar ini menampilkan masalah infrastruktur atau masalah fasilitas publik (contoh: jalan rusak, tumpukan sampah liar, tiang listrik roboh, jembatan putus, saluran air mampet, dsb).
-Jika gambar menampilkan hal tersebut, balas dengan persis kata "YES".
-Jika gambar berisi hal yang tidak pantas, wajah orang secara sembarangan tanpa konteks masalah publik, pemandangan biasa yang tak rusak, foto produk, blur parah, animasi/kartun (selain ilustrasi teknis), balas dengan persis kata "NO".
+Periksa apakah gambar ini relevan atau menampilkan situasi sesuai dengan kategori laporan berikut: "${kategori}".
+Jika gambar relevan dengan konteks "${kategori}" (misal: jika kategori "Jalan Rusak" harus ada jalan rusak, jika "Lampu Jalan Mati" harus menunjukkan tiang/lampu/kondisi jalan terkait, jika "Bukti penanganan" harus menunjukkan proses/hasil perbaikan), balas dengan persis kata "YES".
+Jika gambar berisi foto ngasal, tidak ada hubungannya dengan "${kategori}" (seperti selfie murni, pemandangan utuh/bagus, foto layar monitor, barang/produk, dll), balas dengan persis kata "NO".
 HANYA JAWAB DENGAN YES ATAU NO.`;
 
       const response = await ai.models.generateContent({
