@@ -18,6 +18,9 @@ exports.createLaporan = async (req, res) => {
   const { judul, isi, imageUrl } = req.body;
   const userId = req.user.id;
 
+  const mediaFiles = req.files || [];
+  const mediaUrls = mediaFiles.map(file => file.filename);
+
   try {
     // 0. Idempotency Key check (prevents double-click / network retry duplicates)
     const idempotencyKey = req.headers['x-idempotency-key'];
@@ -56,8 +59,8 @@ exports.createLaporan = async (req, res) => {
 
     // 3. Insert Laporan
     const insertResult = await db.query(
-      "INSERT INTO laporan (user_id, judul, isi, image_url) VALUES ($1, $2, $3, $4) RETURNING id",
-      [userId, judul, isi, imageUrl]
+      "INSERT INTO laporan (user_id, judul, isi, image_url, media_urls) VALUES ($1, $2, $3, $4, $5::jsonb) RETURNING id",
+      [userId, judul, isi, imageUrl, JSON.stringify(mediaUrls)]
     );
 
     const laporanId = insertResult.rows[0].id;
@@ -137,7 +140,17 @@ exports.updateStatus = async (req, res) => {
     return res.status(400).json({ error: "ID laporan tidak valid." });
   }
 
-  const { status, adminEvidenceUrls } = req.body;
+  const { status } = req.body;
+  // Fallback if adminEvidenceUrls is passed as JSON body (backward compatibility)
+  let adminEvidenceUrls = req.body.adminEvidenceUrls;
+  if (typeof adminEvidenceUrls === 'string') {
+     try { adminEvidenceUrls = JSON.parse(adminEvidenceUrls); } catch (e) {}
+  }
+  
+  const adminMediaFiles = req.files || [];
+  if (adminMediaFiles.length > 0) {
+      adminEvidenceUrls = adminMediaFiles.map(file => file.filename);
+  }
 
   // Validasi status value
   const validStatuses = ['Menunggu', 'Diproses', 'Selesai'];

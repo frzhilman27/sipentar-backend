@@ -25,6 +25,7 @@ CREATE TABLE laporan (
     isi TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'Menunggu',
     image_url VARCHAR(255),
+    media_urls JSONB DEFAULT '[]'::jsonb,
     admin_evidence_urls JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

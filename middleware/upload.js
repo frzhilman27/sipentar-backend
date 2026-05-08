@@ -22,9 +22,9 @@ const storage = multer.diskStorage({
 // Init upload
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // Batas 10MB per file
+    limits: { fileSize: 50 * 1024 * 1024 }, // Batas 50MB per file untuk mendukung video
     fileFilter: (req, file, cb) => {
-        const fileTypes = /jpeg|jpg|png/;
+        const fileTypes = /jpeg|jpg|png|webp|mp4|webm|ogg/;
         const extname = fileTypes.test(
             path.extname(file.originalname).toLowerCase()
         );
@@ -33,7 +33,7 @@ const upload = multer({
         if (extname && mimetype) {
             return cb(null, true);
         } else {
-            cb(new Error("Hanya diperbolehkan format gambar (JPG/PNG)!"));
+            cb(new Error("Hanya diperbolehkan format gambar (JPG/PNG/WEBP) dan video (MP4/WEBM/OGG)!"));
         }
     },
 });
