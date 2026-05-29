@@ -4,8 +4,15 @@ const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
   const { nik, name, email, password, jenis_kelamin, no_hp, rt, rw, tempat_lahir, tanggal_lahir, agama, pekerjaan } = req.body;
-  if (!nik || nik.length < 16) {
-    return res.status(400).json({ message: "NIK harus 16 digit" });
+
+  if (!nik || !name || !email || !password) {
+    return res.status(400).json({ message: "NIK, nama, email, dan password wajib diisi." });
+  }
+  if (!/^\d{16}$/.test(String(nik).trim())) {
+    return res.status(400).json({ message: "NIK harus tepat 16 digit angka." });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ message: "Password minimal 6 karakter." });
   }
   try {
     const hashed = await bcrypt.hash(password, 10);
@@ -196,7 +203,7 @@ exports.getMe = async (req, res) => {
   const userId = req.user.id;
   try {
     const result = await db.query(
-      "SELECT id, nik, name, email, role, jenis_kelamin, no_hp, foto_profil, created_at FROM users WHERE id = $1",
+      "SELECT id, nik, name, email, role, jenis_kelamin, no_hp, foto_profil, is_verified, created_at FROM users WHERE id = $1",
       [userId]
     );
     if (result.rows.length === 0) {

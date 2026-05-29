@@ -4,6 +4,10 @@ const aiController = {
   chat: async (req, res) => {
     try {
       const { message, userNameScript } = req.body;
+
+      if (!message || !String(message).trim()) {
+        return res.status(400).json({ error: "Pesan tidak boleh kosong." });
+      }
       
       if (!process.env.GEMINI_API_KEY) {
         return res.status(500).json({ error: "GEMINI_API_KEY belum dikonfigurasi." });
@@ -81,9 +85,10 @@ HANYA JAWAB DENGAN YES ATAU NO.`;
       res.status(200).json({ isValid });
     } catch (error) {
       console.error("AI Photo Validation Error:", error);
-      // In case of AI error, we could fallback to true to not block the user, or false.
-      // Let's fallback to true but log it.
-      res.status(200).json({ isValid: true });
+      res.status(503).json({
+        isValid: false,
+        error: "Validasi foto sementara tidak tersedia. Silakan coba lagi atau hubungi admin desa."
+      });
     }
   }
 };

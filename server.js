@@ -54,6 +54,23 @@ app.get("/", (req, res) => {
    res.json({ message: "Sipentar API Running OK" });
 });
 
+// Multer / upload error handler
+app.use((err, req, res, next) => {
+  if (err instanceof require("multer").MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({ error: "Ukuran file melebihi batas maksimal (50MB per file)." });
+    }
+    if (err.code === "LIMIT_FILE_COUNT") {
+      return res.status(400).json({ error: "Maksimal 5 file media per laporan." });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+  if (err && err.message && err.message.includes("Hanya diperbolehkan")) {
+    return res.status(400).json({ error: err.message });
+  }
+  next(err);
+});
+
 /* ======================
    START SERVER / EXPORT APP
 ====================== */

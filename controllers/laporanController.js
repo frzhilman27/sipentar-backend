@@ -18,7 +18,17 @@ exports.createLaporan = async (req, res) => {
   const { judul, isi, imageUrl } = req.body;
   const userId = req.user.id;
 
+  if (!judul || !String(judul).trim()) {
+    return res.status(400).json({ error: "Jenis laporan wajib dipilih." });
+  }
+  if (!isi || !String(isi).trim()) {
+    return res.status(400).json({ error: "Isi laporan wajib diisi." });
+  }
+
   const mediaFiles = req.files || [];
+  if (mediaFiles.length > 5) {
+    return res.status(400).json({ error: "Maksimal 5 file media per laporan." });
+  }
   const mediaUrls = mediaFiles.map(file => file.filename);
 
   try {
@@ -235,6 +245,15 @@ exports.getLaporanHistory = async (req, res) => {
     }
 
     try {
+        const laporanCheck = await db.query("SELECT user_id FROM laporan WHERE id = $1", [parsedId]);
+        if (laporanCheck.rows.length === 0) {
+          return res.status(404).json({ error: "Laporan tidak ditemukan." });
+        }
+        const ownerId = laporanCheck.rows[0].user_id;
+        if (req.user.role !== 'admin' && ownerId !== req.user.id) {
+          return res.status(403).json({ error: "Akses ditolak. Anda tidak memiliki akses ke riwayat laporan ini." });
+        }
+
         const result = await db.query("SELECT * FROM laporan_history WHERE laporan_id = $1 ORDER BY created_at ASC", [parsedId]);
         res.json(result.rows);
     } catch (err) {
