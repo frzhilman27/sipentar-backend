@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const pengumumanController = require("../controllers/pengumumanController");
-const authMiddleware = require("../middlewares/authMiddleware");
+const authMiddleware = require("../middleware/auth");
 
 // Semua rute ini hanya bisa diakses oleh admin
 router.use(authMiddleware);
