@@ -128,8 +128,8 @@ exports.updatePassword = async (req, res) => {
     return res.status(400).json({ message: "Kata sandi lama dan kata sandi baru wajib diisi." });
   }
 
-  if (newPassword.length < 5) {
-    return res.status(400).json({ message: "Kata sandi baru minimal 5 karakter." });
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: "Kata sandi baru minimal 6 karakter." });
   }
 
   try {

@@ -150,7 +150,7 @@ exports.updateStatus = async (req, res) => {
     return res.status(400).json({ error: "ID laporan tidak valid." });
   }
 
-  const { status } = req.body;
+  const { status, catatan_admin } = req.body;
   // Fallback if adminEvidenceUrls is passed as JSON body (backward compatibility)
   let adminEvidenceUrls = req.body.adminEvidenceUrls;
   if (typeof adminEvidenceUrls === 'string') {
@@ -182,9 +182,9 @@ exports.updateStatus = async (req, res) => {
 
     if (adminEvidenceUrls) {
         // If evidence provided, overwrite the JSON array
-        await db.query("UPDATE laporan SET status=$1, admin_evidence_urls=$2::jsonb WHERE id=$3", [status, JSON.stringify(adminEvidenceUrls), parsedId]);
+        await db.query("UPDATE laporan SET status=$1, admin_evidence_urls=$2::jsonb, catatan_admin=$3 WHERE id=$4", [status, JSON.stringify(adminEvidenceUrls), catatan_admin || null, parsedId]);
     } else {
-        await db.query("UPDATE laporan SET status=$1 WHERE id=$2", [status, parsedId]);
+        await db.query("UPDATE laporan SET status=$1, catatan_admin=$2 WHERE id=$3", [status, catatan_admin || null, parsedId]);
     }
 
     if (oldStatus !== status) {
