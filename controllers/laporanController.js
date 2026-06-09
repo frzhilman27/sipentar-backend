@@ -1,6 +1,31 @@
 const db = require("../config/db");
+const { exec } = require("child_process");
+const path = require("path");
 
-// In-memory idempotency store (per-process; resets on restart)
+// Function to predict priority using Python SVM script
+const predictPriority = (text) => {
+  return new Promise((resolve) => {
+    const scriptPath = path.join(__dirname, '..', 'ml', 'predict_priority.py');
+    const safeText = String(text).replace(/"/g, '\\"');
+    exec(`python "${scriptPath}" "${safeText}"`, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Error executing Python SVM:', error);
+        return resolve({ prioritas: 'Sedang', confidence: 0.0 });
+      }
+      try {
+        const result = JSON.parse(stdout.trim());
+        if (result.prioritas) {
+          resolve({ prioritas: result.prioritas, confidence: result.confidence });
+        } else {
+          resolve({ prioritas: 'Sedang', confidence: 0.0 });
+        }
+      } catch (err) {
+        console.error('Failed to parse Python SVM output:', stdout);
+        resolve({ prioritas: 'Sedang', confidence: 0.0 });
+      }
+    });
+  });
+};
 const _idempotencyStore = new Map();
 const IDEMPOTENCY_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -67,10 +92,14 @@ exports.createLaporan = async (req, res) => {
       return res.status(409).json({ error: "Laporan dengan isi yang sama sudah pernah dikirimkan dalam 24 jam terakhir. Silakan periksa daftar laporan Anda." });
     }
 
+    // 2c. Predict Priority using SVM
+    const textToAnalyze = `${judul} ${isi}`;
+    const svmResult = await predictPriority(textToAnalyze);
+
     // 3. Insert Laporan
     const insertResult = await db.query(
-      "INSERT INTO laporan (user_id, judul, isi, image_url, media_urls) VALUES ($1, $2, $3, $4, $5::jsonb) RETURNING id",
-      [userId, judul, isi, imageUrl, JSON.stringify(mediaUrls)]
+      "INSERT INTO laporan (user_id, judul, isi, image_url, media_urls, prioritas, confidence) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7) RETURNING id",
+      [userId, judul, isi, imageUrl, JSON.stringify(mediaUrls), svmResult.prioritas, svmResult.confidence]
     );
 
     const laporanId = insertResult.rows[0].id;
